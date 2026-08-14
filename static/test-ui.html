@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion MCP Client - Test UI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #111;
+      color: #eee;
+    }
+    h1 { color: #fff; margin-bottom: 0.25rem; }
+    .subtitle { color: #888; margin-bottom: 2rem; }
+    .section {
+      background: #1c1c1c;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .section h2 { margin-top: 0; color: #fff; font-size: 1rem; }
+    label { display: block; margin-bottom: 0.25rem; color: #aaa; font-size: 0.9rem; }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #333;
+      border-radius: 4px;
+      background: #0a0a0a;
+      color: #eee;
+    }
+    textarea { min-height: 90px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    button {
+      background: #fff;
+      color: #111;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    pre {
+      background: #0a0a0a;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    a { color: #9ecbff; }
+  </style>
+</head>
+<body>
+  <h1>Notion MCP Client</h1>
+  <p class="subtitle">Connects to <code>https://mcp.notion.com/mcp</code> with the official tool catalog.</p>
+
+  <div class="section">
+    <h2>OAuth</h2>
+    <p>Redirect URI must match <a href="/oauth/info">/oauth/info</a>. Default: <code>http://127.0.0.1:8765/callback</code> for CLI, or this server's <code>/oauth/callback</code> when using the button below.</p>
+    <button type="button" id="connect">Connect with Notion</button>
+  </div>
+
+  <div class="section">
+    <h2>Credentials</h2>
+    <textarea id="creds-json" placeholder='{"access_token":"...","refresh_token":"...","client_id":"...","token_endpoint":"..."}'></textarea>
+  </div>
+
+  <div class="section">
+    <h2>Tool</h2>
+    <select id="tool-name">
+      <option value="list_notion_tools">list_notion_tools</option>
+      <option value="notion_whoami">notion_whoami</option>
+      <option value="notion_search">notion_search</option>
+      <option value="notion_fetch">notion_fetch</option>
+      <option value="notion_create_file_upload">notion_create_file_upload</option>
+      <option value="notion_create_attachment">notion_create_attachment</option>
+      <option value="notion_download_attachment">notion_download_attachment</option>
+      <option value="notion_create_pages">notion_create_pages</option>
+      <option value="notion_update_page">notion_update_page</option>
+      <option value="notion_convert_page_to_skill">notion_convert_page_to_skill</option>
+      <option value="notion_move_pages">notion_move_pages</option>
+      <option value="notion_duplicate_page">notion_duplicate_page</option>
+      <option value="notion_create_database">notion_create_database</option>
+      <option value="notion_create_folder">notion_create_folder</option>
+      <option value="notion_update_data_source">notion_update_data_source</option>
+      <option value="notion_create_view">notion_create_view</option>
+      <option value="notion_update_view">notion_update_view</option>
+      <option value="notion_query_data_sources">notion_query_data_sources</option>
+      <option value="notion_query_meeting_notes">notion_query_meeting_notes</option>
+      <option value="notion_create_comment">notion_create_comment</option>
+      <option value="notion_get_comments">notion_get_comments</option>
+      <option value="notion_get_teams">notion_get_teams</option>
+      <option value="notion_get_users">notion_get_users</option>
+      <option value="notion_get_async_task">notion_get_async_task</option>
+    </select>
+    <label>Arguments JSON (merged into extra_arguments_json / arguments_json)</label>
+    <textarea id="tool-args">{"id":"self"}</textarea>
+    <label><input type="checkbox" id="dry-run"> dry_run</label>
+    <label><input type="checkbox" id="confirm"> confirm</label>
+    <button type="button" id="run">Call tool</button>
+  </div>
+
+  <div class="section">
+    <h2>Result</h2>
+    <pre id="result">{}</pre>
+  </div>
+
+  <script>
+    document.getElementById("connect").onclick = () => {
+      window.location.href = "/oauth/start?format=redirect";
+    };
+
+    document.getElementById("run").onclick = async () => {
+      const tool = document.getElementById("tool-name").value;
+      const creds = document.getElementById("creds-json").value.trim();
+      let args = {};
+      try { args = JSON.parse(document.getElementById("tool-args").value || "{}"); }
+      catch (err) {
+        document.getElementById("result").textContent = "Invalid arguments JSON";
+        return;
+      }
+      const body = {
+        credentials_json: creds || undefined,
+        extra_arguments_json: JSON.stringify(args),
+        arguments_json: JSON.stringify(args),
+        dry_run: document.getElementById("dry-run").checked,
+        confirm: document.getElementById("confirm").checked,
+      };
+      document.getElementById("result").textContent = "Calling...";
+      try {
+        const res = await fetch("/mcp/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: tool, arguments: body },
+          }),
+        });
+        document.getElementById("result").textContent = await res.text();
+      } catch (err) {
+        document.getElementById("result").textContent = String(err);
+      }
+    };
+  </script>
+</body>
+</html>
