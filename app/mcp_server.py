@@ -174,7 +174,11 @@ def list_notion_tools(
         description="If true, also call notion-fetch id=self for workspace/tool access",
     ),
 ) -> ToolListResponse:
-    """List the official Notion MCP catalog and optionally live tools from the server."""
+    """List the official Notion MCP catalog and optionally live tools from the server.
+
+        Capabilities: notion.list_notion_tools
+Outputs: success
+        """
     live = []
     workspace = None
     access = None
@@ -206,7 +210,11 @@ def notion_whoami(
     credentials_path: Optional[str] = _CREDS_PATH_FIELD,
     credentials_json: Optional[str] = _CREDS_JSON_FIELD,
 ) -> IdentityResponse:
-    """Fetch connected workspace and user via notion-fetch id=self."""
+    """Fetch connected workspace and user via notion-fetch id=self.
+
+        Capabilities: notion.notion_whoami
+Outputs: success
+        """
     if not credentials_path and not credentials_json:
         return IdentityResponse(success=False, error=_creds_required_error())
     try:
@@ -232,7 +240,11 @@ def notion_upload_local_file(
     confirm: bool = Field(default=False, description="Must be true to upload"),
     dry_run: bool = Field(default=False, description="Preview without uploading"),
 ) -> FileUploadResponse:
-    """Create a Notion file-upload URL and POST the local file (client-side multipart)."""
+    """Create a Notion file-upload URL and POST the local file (client-side multipart).
+
+        Capabilities: notion.notion_upload_local_file
+Outputs: success
+        """
     if not credentials_path and not credentials_json:
         return FileUploadResponse(success=False, error=_creds_required_error())
     if not dry_run and not confirm:
