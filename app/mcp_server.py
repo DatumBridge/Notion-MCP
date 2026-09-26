@@ -34,6 +34,7 @@ from app.schemas.mcp_models import (
 )
 from app.services.notion_mcp_client import client_from_credentials, merge_arguments
 from app.services.safety import wrap_untrusted
+from app.capability_bind import bind_declared_capabilities
 
 logger = logging.getLogger(__name__)
 
@@ -394,11 +395,18 @@ def _register_one(spec) -> None:
     field_help = ", ".join(
         f"{name}: {_PRIMARY_FIELD_HELP.get(name, name)}" for name in primary
     )
-    _tool.__doc__ = f"{description}\nPrimary fields: {field_help}\nExample arguments: {example}"
+    _tool.__doc__ = (
+        f"{description}\n"
+        f"Capabilities: notion.{local}, {spec.category}\n"
+        f"Primary fields: {field_help}\nExample arguments: {example}"
+    )
     mcp.tool(name=local, description=_tool.__doc__)(_tool)
 
 
 _register_catalog_tools()
+
+
+bind_declared_capabilities(mcp)
 
 _base_app = mcp.http_app()
 
