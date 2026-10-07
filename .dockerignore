@@ -16,3 +16,5 @@ credentials.json
 oauth-state.json
 *.md
 !README.md
+!registry_docs/
+!registry_docs/*.md
